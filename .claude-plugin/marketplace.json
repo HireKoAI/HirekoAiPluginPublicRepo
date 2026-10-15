@@ -1,0 +1,19 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
+  "name": "hireko-open-plugin",
+  "description": "Hireko Recruiter MCP gateway: Cognito authentication, interview link creation, and candidate search scoring.",
+  "owner": {
+    "name": "Digvijay Gore",
+    "email": "developer_hireko@hireko.ai",
+    "url": "https://hireko.ai"
+  },
+  "plugins": [
+    {
+      "name": "hireko-open-plugin",
+      "description": "Hireko Recruiter MCP gateway: Cognito authentication, interview link creation, and candidate search scoring.",
+      "source": "./",
+      "category": "productivity",
+      "repository": "https://github.com/HireKoAI/HirekoOpenPlugin"
+    }
+  ]
+}
