@@ -97,9 +97,9 @@ Priority: explicit tool args > `apiKey` > `HIREKO_INTERNAL_API_KEY` > plain-env 
 Separate environment variables prefixed with the plugin name `<PLUGIN_NAME>_` (e.g. `HirekoOpenPlugin_`):
 
 ```bash
-export HirekoOpenPlugin_tenant="mycompany"
+export HirekoOpenPlugin_tenant="EXAMPLE_TENANT"
 export HirekoOpenPlugin_username="ci-user@example.com"
-export HirekoOpenPlugin_password="secretPassword123"
+export HirekoOpenPlugin_password="YOUR_PASSWORD"
 ```
 
 Set all three as `<PLUGIN_NAME>_tenant`, `<PLUGIN_NAME>_username`, `<PLUGIN_NAME>_password`. The proxy auto-logs in at serve startup — no MCP `login` call needed.
@@ -111,20 +111,20 @@ A single environment variable containing the base64-encoded JSON representation 
 1. **Plain JSON triplet:**
    ```json
    {
-     "tenant": "mycompany",
+     "tenant": "EXAMPLE_TENANT",
      "username": "ci-user@example.com",
-     "password": "secretPassword123"
+     "password": "YOUR_PASSWORD"
    }
    ```
 
 2. **Base64 encoded string:**
    ```bash
-   export HIREKO_INTERNAL_API_KEY="eyJ0ZW5hbnQiOiJteWNvbXBhbnkiLCJ1c2VybmFtZSI6ImNpLXVzZXJAZXhhbXBsZS5jb20iLCJwYXNzd29yZCI6InNlY3JldFBhc3N3b3JkMTIzIn0="
+   export HIREKO_INTERNAL_API_KEY="YOUR_BASE64_BUNDLE_OR_API_KEY"
    ```
 
 3. **Or generated dynamically in bash:**
    ```bash
-   export HIREKO_INTERNAL_API_KEY=$(echo -n '{"tenant":"mycompany","username":"ci-user@example.com","password":"secretPassword123"}' | base64)
+   export HIREKO_INTERNAL_API_KEY=$(echo -n '{"tenant":"EXAMPLE_TENANT","username":"ci-user@example.com","password":"YOUR_PASSWORD"}' | base64)
    ```
 
 ### Docker / GitHub Actions example

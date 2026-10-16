@@ -81,18 +81,18 @@ MCP is **stdio**, owned by the harness (Claude, Cursor, Hermes, Codex, …). Whe
 - Auth in Docker / Headless: Both headless options inject the exact same **credential triplet** `(tenant, username, password)`:
   - **Format 1 — Plain-env triplet (recommended for CI/Docker — no base64):**
     ```bash
-    export HirekoOpenPlugin_tenant="testcompany"
+    export HirekoOpenPlugin_tenant="EXAMPLE_TENANT"
     export HirekoOpenPlugin_username="recruiter@example.com"
-    export HirekoOpenPlugin_password="mySecretPassword"
+    export HirekoOpenPlugin_password="YOUR_PASSWORD"
     ```
   - **Format 2 — Base64 JSON bundle (`HIREKO_INTERNAL_API_KEY` or CLI `login --apikey`):**
     Plain JSON triplet:
     ```json
-    {"tenant": "testcompany", "username": "recruiter@example.com", "password": "mySecretPassword"}
+    {"tenant": "EXAMPLE_TENANT", "username": "recruiter@example.com", "password": "YOUR_PASSWORD"}
     ```
     Base64 encoded:
     ```bash
-    export HIREKO_INTERNAL_API_KEY="eyJ0ZW5hbnQiOiJ0ZXN0Y29tcGFueSIsInVzZXJuYW1lIjoicmVjcnVpdGVyQGV4YW1wbGUuY29tIiwicGFzc3dvcmQiOiJteVNlY3JldFBhc3N3b3JkIn0="
+    export HIREKO_INTERNAL_API_KEY="YOUR_BASE64_BUNDLE_OR_API_KEY"
     ```
   - Priority: `HIREKO_INTERNAL_API_KEY` > plain-env triplet. The proxy auto-logs in at startup.
   - Device/`login_browser` posts to host loopback — use only with `ssh -L 87xx:127.0.0.1:87xx` from your laptop, or run Hermes on the same machine as the browser.
