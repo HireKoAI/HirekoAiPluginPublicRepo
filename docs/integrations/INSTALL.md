@@ -8,7 +8,7 @@ Install **HirekoOpenPlugin as a plugin** in your agent harness. Do **not** manua
 
 | Harness | Detected when | What `install.sh` does |
 |---------|---------------|------------------------|
-| **Claude Code** | `claude` on PATH | `claude plugin marketplace add` + `claude plugin install HirekoOpenPlugin@HirekoOpenPlugin` |
+| **Claude Code** | `claude` on PATH | `claude plugin marketplace add` + `claude plugin install hireko-open-plugin@hireko-open-plugin` |
 | **Codex** | `codex` on PATH | Stages Codex-safe copy; rewrites `.mcp.json` to `$NAME serve` (global CLI on PATH); marketplace/plugin add + `codex mcp add` (Codex does not expand `${CLAUDE_PLUGIN_ROOT}`) |
 | **Cursor** | `~/.cursor` exists | Copies plugin → `~/.cursor/plugins/local/$NAME`. Unix: `$(command -v node)` + `${PLUGIN_ROOT}`. Windows: install resolves `node` + plugin path on *this* machine (fwd-slash abs), writes plugin `mcp.json` and merges `~/.cursor/mcp.json` — no hardcoded user paths in the repo |
 | **Hermes** | `hermes` on PATH or `~/.hermes` | Copies to `~/.hermes/plugins/`, `hermes mcp add` when CLI present, skill under `~/.hermes/skills/` |

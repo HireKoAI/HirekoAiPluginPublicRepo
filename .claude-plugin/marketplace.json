@@ -13,7 +13,7 @@
       "description": "Hireko Recruiter MCP gateway: Cognito authentication, interview link creation, and candidate search scoring.",
       "source": "./",
       "category": "productivity",
-      "repository": "https://github.com/HireKoAI/HirekoOpenPlugin"
+      "repository": "https://github.com/HireKoAI/HirekoAiPluginPublicRepo"
     }
   ]
 }

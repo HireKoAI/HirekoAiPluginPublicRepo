@@ -95,12 +95,19 @@ Run `auth_status` (or type `/HirekoOpenPlugin` with no tenant) to confirm. The R
 
 ### Claude Code
 
+From GitHub Marketplace:
 ```bash
-claude plugin marketplace add --scope user ~/.hireko/plugins/HirekoOpenPlugin
-claude plugin install HirekoOpenPlugin@HirekoOpenPlugin --scope user
+claude plugin marketplace add HireKoAI/HirekoAiPluginPublicRepo
+claude plugin install hireko-open-plugin@hireko-open-plugin
 ```
 
-Or one session: `claude --plugin-dir ~/.hireko/plugins/HirekoOpenPlugin`
+From local directory:
+```bash
+claude plugin marketplace add --scope user ~/.hireko/plugins/HirekoOpenPlugin
+claude plugin install hireko-open-plugin@hireko-open-plugin --scope user
+```
+
+Or for a single session: `claude --plugin-dir ~/.hireko/plugins/HirekoOpenPlugin`
 
 Restart Claude Code. Type `/HirekoOpenPlugin` (tabs: tenant, username, password).
 

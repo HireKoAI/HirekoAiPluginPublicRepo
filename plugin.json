@@ -3,7 +3,7 @@
   "name": "HirekoOpenPlugin",
   "version": "0.1.0",
   "description": "Hireko Recruiter MCP gateway: Cognito authentication, interview link creation, and candidate search scoring.",
-  "repository": "https://github.com/HireKoAI/HirekoOpenPlugin",
+  "repository": "https://github.com/HireKoAI/HirekoAiPluginPublicRepo",
   "homepage": "https://hireko.ai",
   "license": "MIT",
   "author": {
