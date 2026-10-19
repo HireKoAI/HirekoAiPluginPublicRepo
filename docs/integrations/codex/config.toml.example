@@ -1,0 +1,11 @@
+# Codex CLI MCP configuration (~/.codex/config.toml)
+# Server id + command are stamped from z_* PLUGIN_NAME at deploy.
+
+[mcp_servers.HirekoOpenPlugin]
+command = "HirekoOpenPlugin"
+args = ["serve"]
+
+# If you installed locally without a global binary:
+# [mcp_servers.HirekoOpenPlugin]
+# command = "npx"
+# args = ["-y", "@hireko/mcp-router", "serve"]

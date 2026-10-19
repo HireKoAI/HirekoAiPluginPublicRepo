@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "HirekoOpenPlugin": {
+      "type": "http",
+      "url": "https://sm3m7mrvpfdovsnjoza4xkil5u0gqnke.lambda-url.us-west-2.on.aws/mcp"
+    }
+  }
+}
