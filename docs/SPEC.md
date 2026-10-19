@@ -487,10 +487,10 @@ Example:
   },
 
   "authHeaders": {
-    "authorization": "Bearer ${ACCESS_TOKEN}",
+    "authorization": "Bearer <access-token>",
     "tenant": {
       "name": "X-Tenant",
-      "value": "${TENANT}"
+      "value": "<tenant>"
     }
   },
 

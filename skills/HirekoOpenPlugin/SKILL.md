@@ -43,8 +43,6 @@ Call `auth_status` once if available. Print usage + stage/human when known. Stop
 
 ```bash
 HirekoOpenPlugin login --browser --tenant <tenant> [--stage beta|prod] [--local-port <port>]
-# or, if only the plugin tree is available:
-node "${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/dist/cli/index.js" login --browser --tenant <tenant> [--stage beta|prod] [--local-port <port>]
 ```
 
 6. Password `login` tool only if browser path is impossible and username/password were provided.
