@@ -1,43 +1,35 @@
 # Hireko for Hermes
 
-A portable Agent Plugins v1 package for Hermes Desktop and CLI. The package root is `.hermes-plugin/`, containing `plugin.json`, `mcp.json`, and `skills/hireko/SKILL.md`. The repository-root manifests serve the existing plugin and are separate.
+This package launches the local Hireko authentication router over stdio. It provides auth_status, login_browser, and logout before sign-in, then injects tenant credentials into downstream recruiting calls. The Lambda endpoint alone does not provide browser sign-in tools.
 
-## What runs and where data goes
+## Build and validate
 
-Hermes connects to the HTTPS MCP endpoint declared in `mcp.json`, hosted on AWS Lambda in us-west-2. Recruiting tool arguments, including interview details and job identifiers, go to the Hireko gateway. Returned candidate links and scores enter the conversation. An account and a working gateway authentication flow are required.
+Requires Node.js 20 or newer on PATH on the machine running Hermes.
 
-This package ships configuration and instructions only: no local executable, dependencies, shell commands, background service, credential-file access, telemetry implementation, or self-updater. Gateway-side credential handling and data retention are outside this package; confirm and disclose those service policies before catalog submission. The remote endpoint is not pinned by the package's Git SHA and its tool surface may change.
+    npm ci
+    npm run build
+    node scripts/package-hermes.mjs
+    node scripts/validate-hermes-package.mjs
+    node scripts/test-hermes-package.mjs
+    hermes plugins validate .hermes-plugin --install-deps
 
-## Validate and test
+The release pipeline builds and includes the bundled CLI and browser assets inside this package; users do not need npm install. Do not publish just the manifests.
 
-From the repository root:
+## Install and sign in
 
-```bash
-node scripts/validate-hermes-package.mjs
-hermes plugins validate .hermes-plugin --install-deps
-```
+    hermes plugins install HireKoAI/HirekoAiPluginPublicRepo/.hermes-plugin --ref <FULL_RELEASE_SHA> --no-enable
+    hermes plugins enable hireko
 
-The Node check verifies package layout and configuration only. Hermes validation, catalog review, and authenticated runtime tests are separate requirements.
+Restart Hermes after installing the new release. Ask it to call auth_status, then login_browser for the intended tenant and stage (beta or prod). Complete sign-in in the browser and confirm auth_status reports the correct tenant. Never paste passwords or tokens into chat. If auth_status is absent, check plugin enablement, Node on PATH, package runtime assets, and Hermes MCP logs. Remove a separately configured stale remote-only Hireko MCP entry if it conflicts with this plugin.
 
-After publishing, install the package subdirectory at the full public release SHA:
+The router and browser must run on the same machine; remote SSH/Docker installations need callback port forwarding. Successful discovery does not verify Cognito login or downstream authorization: complete a real test-tenant login before release.
 
-```bash
-hermes plugins install HireKoAI/HirekoAiPluginPublicRepo/.hermes-plugin --ref <FULL_RELEASE_SHA> --no-enable
-hermes plugins enable hireko
-```
+## Data and permissions
 
-Test the same package and SHA in Desktop through Install from Git using the subdirectory source. Consult your installed client's supported fields if its dialog differs. Discover the bundled skill through the client's skill list.
+Enabling this package runs a local Node process with the user's permissions. It opens loopback control and browser callback endpoints, fetches public tenant configuration, and authenticates with Cognito. Credentials are stored in restricted local files under Hermes PLUGIN_DATA (or HIREKO_HOME when explicitly set), outside the installed package. Recruiting tool arguments go to the configured Hireko downstream services. No credentials belong in mcp.json. Use logout to clear the active session.
 
-Verify MCP tool discovery, secure authentication, tenant isolation, interview creation and retrieval, scoring, error handling, and logout in both clients. Interview creation changes service data; use a test tenant and test job. Never paste passwords into chat. A remote server's loopback browser callback cannot reach the user's machine; confirm a compatible authentication flow before release.
+The default downstream URL is configured by the router for beta; production requires MCP_EXTENSION_RECRUITER_FACADE and the correct HIREKO_STAGE. The hosted downstream service is not pinned by the plugin Git SHA.
 
-## Publish and submit
+## Publishing
 
-The pipeline runs beta deployment first, then production deployment and beta public sync in parallel. After both succeed, `SyncHermes` publishes this package to `hermes` in HireKoAI/HirekoAiPluginPublicRepo, alongside `SyncPublicRepoProd`, which publishes the regular package to `main`. The beta public sync targets `beta`. Production deployment remains restricted to the source branch `main` and uses Azure environment `prod` and its configured checks; the final syncs are skipped when production deployment is skipped. Hermes publishing is a single stage, without separate beta/prod package stages.
-
-The pipeline stamps `hireko.yaml` with a public commit containing the package. Use that stamped release SHA for testing. The checked-in SHA is a draft and is not evidence that this package was tested.
-
-Before submission, confirm catalog capability declarations against Hermes validation and the actual discovered tools. Empty capability lists are not a verified inventory of the hosted service. Confirm the minimum supported Hermes version against both clients and add truthful compatibility metadata if required.
-
-Submit the stamped entry as `plugin-catalog/hireko.yaml` in a PR to NousResearch/hermes-agent. Disclose hosted network calls and authentication behavior in the PR, include validation output, and fix all failures. Pushing this repository does not create a catalog listing. Catalog acceptance requires maintainer review; it is not guaranteed by local checks.
-
-Reference: https://hermes-agent.nousresearch.com/docs/developer-guide/plugins/catalog-submission
+SyncHermes follows SyncPublicRepoBeta and publishes the built package to the public hermes branch. It stamps hireko.yaml with a public release commit. Install that exact commit and validate tool discovery, browser sign-in, tenant isolation, recruiting calls, and logout before submitting to a catalog. Catalog submission and acceptance are separate from publishing.

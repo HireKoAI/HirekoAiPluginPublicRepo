@@ -9,9 +9,9 @@ Use the tools discovered from the package's `hireko` MCP server. Match the opera
 
 ## Authentication
 
-Check `auth_status` when available. Use the gateway's supported secure sign-in flow and present any returned browser URL. Never ask for passwords, tokens, or API keys in chat, and never construct authentication headers. If a different tenant is active, sign out before signing into another tenant.
+Call `auth_status` first. When signed out, call `login_browser` with the requested tenant and deployment stage. The local router opens the secure browser sign-in flow. Never ask for passwords, tokens, or API keys in chat, and never construct authentication headers. If a different tenant is active, sign out before signing into another tenant.
 
-The MCP server runs remotely. A login callback to the server's localhost is not the user's localhost. If the gateway offers only a loopback flow, explain that remote authentication setup is required; do not claim sign-in succeeded. Unattended runs must return a clear sign-in requirement instead of waiting for a browser.
+The authentication router runs locally under Hermes, so the browser callback reaches the same machine. For SSH or Docker, forward the callback port to the browser machine before signing in; do not claim sign-in succeeded without a successful tool result. Unattended runs must return a clear sign-in requirement instead of waiting for a browser.
 
 ## Interview links
 
