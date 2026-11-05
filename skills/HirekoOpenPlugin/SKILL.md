@@ -1,5 +1,5 @@
 ---
-name: HirekoOpenPlugin
+name: Hireko
 description: Sign in / out and check Hireko / Recruiter (HirekoOpenPlugin) auth via browser device login. Free-form args set tenant, optional stage (beta|prod), and optional local Vite port. Use when the user types /HirekoOpenPlugin, hireko or recruiter login/logout/status.
 argument-hint: "[stage] <tenant> [local <port>] [username] [password]"
 user-invocable: true
