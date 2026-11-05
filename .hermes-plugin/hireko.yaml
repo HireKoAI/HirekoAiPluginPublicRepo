@@ -2,7 +2,7 @@ name: hireko
 title: Hireko
 repo: https://github.com/HireKoAI/HirekoAiPluginPublicRepo
 subdir: .hermes-plugin
-sha: e4c96e2a2532107a4e266f777c0fbd78a303c08a
+sha: 4aa19d0548e4f03fb9c47e8945c23bfafe8a55ca
 version: "0.1.0"
 description: >-
   Hireko Recruiter MCP gateway: Cognito authentication, candidate screening interview link creation,
