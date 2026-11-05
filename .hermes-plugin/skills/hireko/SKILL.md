@@ -1,28 +1,64 @@
 ---
 name: hireko
-description: Use Hireko MCP tools to check authentication, create candidate interview links, and retrieve candidate match scores.
+description: "Hireko recruiting platform: check authentication, sign in (password or browser), create candidate screening interview links, and retrieve candidate match scores."
+argument-hint: "[stage] <tenant> [email] [password]"
+user-invocable: true
+disable-model-invocation: false
 ---
 
-# Hireko recruiting workflows
+# Hireko recruiting workflows for Hermes
 
-Use the tools discovered from the package's `hireko` MCP server. Match the operation by its name and description; use its live input schema for required fields and supported options. Do not invent tool names or assume the hosted gateway exposes every tool in the local router.
+Use the tools exposed by the `hireko` MCP server (`auth_status`, `login`, `login_browser`, `logout`, `create_interview_link`, `get_interview_link`, `get_search_score`, `health`).
 
-## Authentication
+## 1. Authentication
 
-Call `auth_status` first. When signed out, call `login_browser` with the requested tenant and deployment stage. The local router opens the secure browser sign-in flow. Never ask for passwords, tokens, or API keys in chat, and never construct authentication headers. If a different tenant is active, sign out before signing into another tenant.
+Call `auth_status` first to check if an active session exists.
 
-The authentication router runs locally under Hermes, so the browser callback reaches the same machine. For SSH or Docker, forward the callback port to the browser machine before signing in; do not claim sign-in succeeded without a successful tool result. Unattended runs must return a clear sign-in requirement instead of waiting for a browser.
+- **Email & Password login:** If the user provides or asks to use email and password, call `login({ tenant, username, password, stage })`.
+- **Browser sign-in:** If the user requests browser login, asks to sign in without providing credentials, or prefers OAuth, call `login_browser({ tenant, stage })`. This opens the recruiter device login page in the default browser.
+- **Sign out:** Call `logout({ tenant })` to end the session.
 
-## Interview links
+Only one tenant session is active at a time. Default stage is `beta` unless the user specifies `prod`.
 
-Find the interview-creation tool, such as `RecruiterFacade__create_interview_link`. Gather its required interview details. Convert dates to epoch milliseconds only when the schema requires that format, resolving the user's timezone first. Pass the requested tenant and stage only when supported; do not silently choose an environment.
+## 2. Creating Candidate Interview Links
 
-Present the URL returned by the service. If processing is pending, report that state and use a discovered retrieval tool with the returned identifier. Never fabricate a candidate URL or report an upstream error as success.
+When the user asks to create or schedule an interview link:
 
-## Candidate scores
+### ⚠️ STRICT RULE: Ask Only ONE Question at a Time!
+Do NOT ask the user for multiple details at once. Do NOT provide a bulleted list or multi-field questionnaire.
+Always collect details **step-by-step, asking strictly ONE question per turn**:
 
-Find the search-score tool, such as `RecruiterFacade__get_search_score`. Obtain the job ID, call the tool, and summarize its returned scores without inventing values.
+1. **Job Title**:
+   - If not provided in the user prompt, ask: *"What is the job title for this interview?"*
+   - If the user already provided the title (e.g. "Javascript Developer"), immediately move to step 2.
 
-## Sign out
+2. **Duration (in minutes)**:
+   - Ask ONLY: *"How long should the interview be? (e.g. 15, 30, or 45 minutes)"*
+   - Wait for user response before asking the next question.
 
-Call the discovered logout tool. Report its result and check authentication status when available to confirm sign-out.
+3. **Location**:
+   - Ask ONLY: *"Where is this position located? (e.g. Remote, Seattle, WA, Bangalore)"*
+   - Wait for user response before asking the next question.
+
+4. **Company Name**:
+   - Ask ONLY: *"What is the name of the hiring company?"*
+   - Wait for user response before asking the next question.
+
+5. **Start and Expiry Dates**:
+   - Ask ONLY: *"What are the start and expiry dates? (You can also reply 'default' to start today and remain active for 7 days)."*
+
+### Important Automation Rules:
+- **Do NOT ask for Job Description**: Synthesize a concise, professional job description automatically from the job title.
+- **Do NOT ask for Recruiter Email**: The authenticated recruiter's email is automatically injected by the backend proxy.
+- **Do NOT combine steps**: Even if you know multiple fields are missing, ask for only the single next field.
+
+Once all details are collected, call `create_interview_link`:
+- `create_interview_link` triggers the AWS Step Function and automatically polls for up to 150 seconds for AI question generation to complete.
+- When status is `"COMPLETED"`, present the candidate `interview_link` (e.g. `https://interview-test.beta.hireko.ai/anonymousInterviewSession/job_...`) and `job_id` prominently to the user.
+- If the initial call returns `status: "STARTED"` or `"IN_PROGRESS"` after 150 seconds, inform the user that question generation is still in progress and call `get_interview_link({ external_job_group_id })` to continue polling for up to 150 seconds.
+
+## 3. Candidate Search & Match Scores
+
+When the user asks for candidate scores or job match relevance:
+1. Call `get_search_score({ job_id, tenant, stage })`.
+2. Format and summarize the candidate scoring breakdown clearly for the user.

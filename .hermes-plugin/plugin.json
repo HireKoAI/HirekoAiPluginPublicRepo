@@ -29,6 +29,11 @@
       "interface": {
         "shortDescription": "Hireko Recruiter MCP gateway: Cognito auth, interview creation, and candidate scoring",
         "displayName": "hireko"
+      },
+      "servers": {
+        "hireko": {
+          "timeout": 200
+        }
       }
     }
   }

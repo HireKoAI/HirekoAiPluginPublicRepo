@@ -5,7 +5,7 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "${PLUGIN_ROOT}/launch.mjs"
+        "${PLUGIN_ROOT}/index.mjs"
       ],
       "cwd": "${PLUGIN_ROOT}",
       "env": {

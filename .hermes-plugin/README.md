@@ -1,35 +1,69 @@
 # Hireko for Hermes
 
-This package launches the local Hireko authentication router over stdio. It provides auth_status, login_browser, and logout before sign-in, then injects tenant credentials into downstream recruiting calls. The Lambda endpoint alone does not provide browser sign-in tools.
+A lightweight, self-contained MCP plugin for **Hermes Desktop and CLI** that connects to Hireko's recruiting platform:
+- Recruiter authentication via **email/password** or **browser device login**
+- Candidate screening **interview link creation**
+- Asynchronous interview session status & link retrieval (`anonymousInterviewSession`)
+- Candidate **search & match scoring**
 
-## Build and validate
+---
 
-Requires Node.js 20 or newer on PATH on the machine running Hermes.
+## Capabilities & Tools
 
-    npm ci
-    npm run build
-    node scripts/package-hermes.mjs
-    node scripts/validate-hermes-package.mjs
-    node scripts/test-hermes-package.mjs
-    hermes plugins validate .hermes-plugin --install-deps
+| Tool | Description |
+|---|---|
+| `auth_status` | Check if you are currently signed in, active tenant, and deployment stage. |
+| `login` | Authenticate using recruiter email and password. |
+| `login_browser` | Authenticate interactively via the recruiter device-login browser window. |
+| `logout` | Sign out and clear stored session tokens. |
+| `create_interview_link` | Initiate candidate interview creation. Starts an AWS Step Function and returns the `external_job_group_id`. |
+| `get_interview_link` | Retrieve the completed candidate interview URL (`https://interview-test.<stage>.hireko.ai/anonymousInterviewSession/...`) using `external_job_group_id`. |
+| `get_search_score` | Fetch candidate match scores for a given `job_id`. |
+| `health` | Verify connectivity with Hireko's downstream recruiter services. |
 
-The release pipeline builds and includes the bundled CLI and browser assets inside this package; users do not need npm install. Do not publish just the manifests.
+---
 
-## Install and sign in
+## Interview Creation Workflow
 
-    hermes plugins install HireKoAI/HirekoAiPluginPublicRepo/.hermes-plugin --ref <FULL_RELEASE_SHA> --no-enable
-    hermes plugins enable hireko
+Hireko uses an asynchronous AI Step Function to prepare questions (takes up to 150 seconds):
 
-Restart Hermes after installing the new release. Ask it to call auth_status, then login_browser for the intended tenant and stage (beta or prod). Complete sign-in in the browser and confirm auth_status reports the correct tenant. Never paste passwords or tokens into chat. If auth_status is absent, check plugin enablement, Node on PATH, package runtime assets, and Hermes MCP logs. Remove a separately configured stale remote-only Hireko MCP entry if it conflicts with this plugin.
+1. **Create & Poll:** Call `create_interview_link` with the job details (title, company, description, duration, dates). The tool polls for up to 150 seconds and returns the finished candidate URL directly once questions are generated:
+   ```json
+   {
+     "status": "COMPLETED",
+     "job_id": "job_1793294089408_9f1f3ef3-2f9d-415a-a5b4-966fa3d51098",
+     "interview_link": "https://interview-test.beta.hireko.ai/anonymousInterviewSession/job_1793294089408_9f1f3ef3-2f9d-415a-a5b4-966fa3d51098?settings=eyJyZW5kZXJJRCI6ICJidWJibGUiLCAiaXNTY3JlZW5TaGFyZU1hbmRhdG9yeSI6IGZhbHNlfQ=="
+   }
+   ```
+2. **Manual Retrieval (if needed):** If generation takes longer than 150s, the tool returns `status: "STARTED"` with `external_job_group_id`. Call `get_interview_link` with `external_job_group_id` to poll for completion:
+   ```json
+   {
+     "status": "COMPLETED",
+     "job_id": "job_1793294089408_9f1f3ef3-2f9d-415a-a5b4-966fa3d51098",
+     "interview_link": "https://interview-test.beta.hireko.ai/anonymousInterviewSession/job_1793294089408_9f1f3ef3-2f9d-415a-a5b4-966fa3d51098?settings=eyJyZW5kZXJJRCI6ICJidWJibGUiLCAiaXNTY3JlZW5TaGFyZU1hbmRhdG9yeSI6IGZhbHNlfQ=="
+   }
+   ```
 
-The router and browser must run on the same machine; remote SSH/Docker installations need callback port forwarding. Successful discovery does not verify Cognito login or downstream authorization: complete a real test-tenant login before release.
+---
 
-## Data and permissions
+## Installation & Usage in Hermes
 
-Enabling this package runs a local Node process with the user's permissions. It opens loopback control and browser callback endpoints, fetches public tenant configuration, and authenticates with Cognito. Credentials are stored in restricted local files under Hermes PLUGIN_DATA (or HIREKO_HOME when explicitly set), outside the installed package. Recruiting tool arguments go to the configured Hireko downstream services. No credentials belong in mcp.json. Use logout to clear the active session.
+### Option 1: Local Testing in Hermes Desktop
+Copy or link `.hermes-plugin` to your local Hermes plugins folder:
+```powershell
+Copy-Item -Recurse -Force ".hermes-plugin" "$env:USERPROFILE\.hermes\plugins\hireko"
+```
 
-The default downstream URL is configured by the router for beta; production requires MCP_EXTENSION_RECRUITER_FACADE and the correct HIREKO_STAGE. The hosted downstream service is not pinned by the plugin Git SHA.
+Restart Hermes Desktop. In the chat prompt, use:
+```text
+/hireko
+```
+Or simply tell Hermes:
+> *"Sign in to Hireko with email recruiter@example.com and password ... for tenant test"*  
+> *"Create a 30-minute screening interview link for Senior Backend Engineer at Acme Corp"*
 
-## Publishing
-
-SyncHermes follows SyncPublicRepoBeta and publishes the built package to the public hermes branch. It stamps hireko.yaml with a public release commit. Install that exact commit and validate tool discovery, browser sign-in, tenant isolation, recruiting calls, and logout before submitting to a catalog. Catalog submission and acceptance are separate from publishing.
+### Option 2: Install via Hermes CLI
+```bash
+hermes plugins install HireKoAI/HirekoAiPluginPublicRepo/.hermes-plugin
+hermes plugins enable hireko
+```
