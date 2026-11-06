@@ -24,7 +24,6 @@ rl.on('line', (line) => {
     const tools = res.result?.tools?.map((t) => t.name) || [];
     const expected = [
       'auth_status',
-      'login',
       'login_browser',
       'logout',
       'create_interview_link',
@@ -36,7 +35,7 @@ rl.on('line', (line) => {
       assert.ok(tools.includes(name), `Missing tool: ${name}`);
     }
     toolsChecked = true;
-    send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'auth_status', arguments: { tenant: 'nonexistent_test' } } });
+    send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'auth_status', arguments: { tenant: 'nonexistent-test' } } });
   } else if (res.id === 3) {
     const text = res.result?.content?.[0]?.text;
     assert.ok(text, 'Expected text in auth_status result');
@@ -44,7 +43,7 @@ rl.on('line', (line) => {
     proc.kill();
 
     if (toolsChecked && authChecked) {
-      console.log('Hermes package smoke passed: isolated stdio startup, all 8 tools discovered, signed-out status verified.');
+      console.log('Hermes package smoke passed: isolated stdio startup, all 7 tools discovered, signed-out status verified.');
       process.exit(0);
     }
   }

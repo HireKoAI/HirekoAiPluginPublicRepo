@@ -13,7 +13,6 @@ A lightweight, self-contained MCP plugin for **Hermes Desktop and CLI** that con
 | Tool | Description |
 |---|---|
 | `auth_status` | Check if you are currently signed in, active tenant, and deployment stage. |
-| `login` | Authenticate using recruiter email and password. |
 | `login_browser` | Authenticate interactively via the recruiter device-login browser window. |
 | `logout` | Sign out and clear stored session tokens. |
 | `create_interview_link` | Initiate candidate interview creation. Starts an AWS Step Function and returns the `external_job_group_id`. |
@@ -59,7 +58,7 @@ Restart Hermes Desktop. In the chat prompt, use:
 /hireko
 ```
 Or simply tell Hermes:
-> *"Sign in to Hireko with email recruiter@example.com and password ... for tenant test"*  
+> *"Sign in to Hireko for tenant test"*  
 > *"Create a 30-minute screening interview link for Senior Backend Engineer at Acme Corp"*
 
 ### Option 2: Install via Hermes CLI

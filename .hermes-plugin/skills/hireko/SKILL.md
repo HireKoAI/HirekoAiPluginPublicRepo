@@ -1,21 +1,21 @@
 ---
 name: hireko
-description: "Hireko recruiting platform: check authentication, sign in (password or browser), create candidate screening interview links, and retrieve candidate match scores."
-argument-hint: "[stage] <tenant> [email] [password]"
+description: "Hireko recruiting platform: check authentication, sign in via browser, create candidate screening interview links, and retrieve candidate match scores."
+argument-hint: "[stage] <tenant>"
 user-invocable: true
 disable-model-invocation: false
 ---
 
 # Hireko recruiting workflows for Hermes
 
-Use the tools exposed by the `hireko` MCP server (`auth_status`, `login`, `login_browser`, `logout`, `create_interview_link`, `get_interview_link`, `get_search_score`, `health`).
+Use the tools exposed by the `hireko` MCP server (`auth_status`, `login_browser`, `logout`, `create_interview_link`, `get_interview_link`, `get_search_score`, `health`).
 
 ## 1. Authentication
 
 Call `auth_status` first to check if an active session exists.
 
-- **Email & Password login:** If the user provides or asks to use email and password, call `login({ tenant, username, password, stage })`.
-- **Browser sign-in:** If the user requests browser login, asks to sign in without providing credentials, or prefers OAuth, call `login_browser({ tenant, stage })`. This opens the recruiter device login page in the default browser.
+- **Browser sign-in:** When the user asks to sign in or if authentication is needed, call `login_browser({ tenant, stage })`. This opens the recruiter device login page in the default browser without asking for passwords in chat.
+- **Headless sign-in (CI/Docker):** In headless environments, credentials can be set via `HIREKO_USERNAME` and `HIREKO_PASSWORD` in `mcp_servers.hireko.env` (never ask the user to type passwords into chat).
 - **Sign out:** Call `logout({ tenant })` to end the session.
 
 Only one tenant session is active at a time. Default stage is `beta` unless the user specifies `prod`.

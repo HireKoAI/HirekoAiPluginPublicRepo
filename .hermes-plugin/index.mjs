@@ -21,7 +21,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 
 const LOG_PREFIX = '[hireko-mcp]';
 function logErr(...args) {
@@ -49,6 +49,14 @@ const session = {
   expiresAt: 0
 };
 
+function validateTenant(raw) {
+  const slug = (raw || session.tenant || 'test').trim().toLowerCase();
+  if (!/^[a-z0-9-]{1,63}$/.test(slug)) {
+    throw new Error(`Invalid tenant '${raw}'. Tenant must match ^[a-z0-9-]{1,63}$.`);
+  }
+  return slug;
+}
+
 // ── Credential Storage ────────────────────────────────────────────────────────
 
 function getCredentialsDir() {
@@ -71,7 +79,7 @@ function getCredentialsDir() {
 }
 
 function loadSavedCredentials(tenant) {
-  const t = tenant || session.tenant || 'test';
+  const t = validateTenant(tenant);
   try {
     const filePath = path.join(getCredentialsDir(), `${t}.json`);
     if (fs.existsSync(filePath)) {
@@ -105,7 +113,7 @@ function loadSavedCredentials(tenant) {
 
 function saveCredentials(tenant, data) {
   try {
-    const t = tenant || session.tenant || 'test';
+    const t = validateTenant(tenant);
     const dir = getCredentialsDir();
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     const filePath = path.join(dir, `${t}.json`);
@@ -123,7 +131,7 @@ function saveCredentials(tenant, data) {
 
 function clearSavedCredentials(tenant) {
   try {
-    const t = tenant || session.tenant || 'test';
+    const t = validateTenant(tenant);
     const filePath = path.join(getCredentialsDir(), `${t}.json`);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -140,16 +148,25 @@ function clearSavedCredentials(tenant) {
 // ── Cognito Authentication ────────────────────────────────────────────────────
 
 async function fetchTenantConfig(tenant, stage) {
-  const slug = (tenant || 'test').trim().toLowerCase();
+  const slug = validateTenant(tenant);
   const host = stage === 'prod' ? `recruiter-${slug}.hireko.ai` : `recruiter-${slug}.beta.hireko.ai`;
   const url = `https://${host}/assets/Json/tenant_configuration.json`;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (res.ok) {
       const json = await res.json();
-      const clientId = json.cognito?.cognito_client_id || DEFAULT_COGNITO_CLIENT_ID;
+      const rawClientId = json.cognito?.cognito_client_id;
       const userPoolId = json.cognito?.cognito_user_pool_id || '';
-      const region = userPoolId.includes('_') ? userPoolId.split('_')[0] : DEFAULT_COGNITO_REGION;
+      const rawRegion = userPoolId.includes('_') ? userPoolId.split('_')[0] : DEFAULT_COGNITO_REGION;
+
+      const clientId = (typeof rawClientId === 'string' && /^[a-z0-9]{1,128}$/.test(rawClientId))
+        ? rawClientId
+        : DEFAULT_COGNITO_CLIENT_ID;
+
+      const region = (typeof rawRegion === 'string' && /^[a-z]{2}(-[a-z]+)+-\d$/.test(rawRegion))
+        ? rawRegion
+        : DEFAULT_COGNITO_REGION;
+
       return { clientId, region };
     }
   } catch (err) {
@@ -247,18 +264,23 @@ async function ensureValidToken(tenant, stage) {
 
 function openBrowserUrl(url) {
   const p = process.platform;
-  if (p === 'win32') {
-    exec(`start "" "${url}"`);
-  } else if (p === 'darwin') {
-    exec(`open "${url}"`);
-  } else {
-    exec(`xdg-open "${url}"`);
+  try {
+    if (p === 'win32') {
+      execFile('cmd.exe', ['/c', 'start', '', url]);
+    } else if (p === 'darwin') {
+      execFile('open', [url]);
+    } else {
+      execFile('xdg-open', [url]);
+    }
+  } catch (err) {
+    logErr('Could not open browser automatically:', err.message);
   }
 }
 
 async function startBrowserLogin(tenant, stage = 'beta') {
-  const t = (tenant || session.tenant || 'test').trim().toLowerCase();
-  const s = stage || session.stage || 'beta';
+  const t = validateTenant(tenant);
+  const s = stage === 'prod' ? 'prod' : 'beta';
+  const allowedOrigin = s === 'prod' ? `https://recruiter-${t}.hireko.ai` : `https://recruiter-${t}.beta.hireko.ai`;
 
   return new Promise((resolve, reject) => {
     // Find free port between 8700 and 8790
@@ -276,20 +298,32 @@ async function startBrowserLogin(tenant, stage = 'beta') {
 
       // Handle ping
       if (parsedUrl.pathname === '/oauth/ping') {
-        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': allowedOrigin
+        });
         res.end(JSON.stringify({ status: 'ok' }));
         return;
       }
 
-      // Handle callback (POST or GET)
+      // Handle callback (POST only)
       if (parsedUrl.pathname === '/oauth/callback') {
         if (req.method === 'OPTIONS') {
           res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Origin': allowedOrigin,
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type'
           });
           res.end();
+          return;
+        }
+
+        if (req.method !== 'POST') {
+          res.writeHead(405, {
+            'Content-Type': 'text/plain',
+            'Access-Control-Allow-Origin': allowedOrigin
+          });
+          res.end('Method Not Allowed: Only POST is accepted.');
           return;
         }
 
@@ -300,13 +334,22 @@ async function startBrowserLogin(tenant, stage = 'beta') {
           try {
             if (body) {
               payload = JSON.parse(body);
-            } else {
-              for (const [k, v] of parsedUrl.searchParams.entries()) {
-                payload[k] = v;
-              }
             }
           } catch (e) {
             logErr('Failed parsing callback body:', e.message);
+          }
+
+          // Verify state matches exactly before accepting token
+          if (!payload.state || payload.state !== state) {
+            res.writeHead(400, {
+              'Content-Type': 'text/html',
+              'Access-Control-Allow-Origin': allowedOrigin
+            });
+            res.end(`<!DOCTYPE html><html><body style="font-family:sans-serif;text-align:center;padding:50px;">
+              <h2>Login Failed</h2>
+              <p>OAuth state parameter mismatch.</p>
+            </body></html>`);
+            return;
           }
 
           const accessToken = payload.accessToken || payload.access_token;
@@ -327,7 +370,7 @@ async function startBrowserLogin(tenant, stage = 'beta') {
 
             res.writeHead(200, {
               'Content-Type': 'text/html',
-              'Access-Control-Allow-Origin': '*'
+              'Access-Control-Allow-Origin': allowedOrigin
             });
             res.end(`<!DOCTYPE html><html><body style="font-family:sans-serif;text-align:center;padding:50px;">
               <h2>Login Successful!</h2>
@@ -342,11 +385,15 @@ async function startBrowserLogin(tenant, stage = 'beta') {
               success: true,
               tenant: t,
               stage: s,
+              loginUrl,
               message: `Successfully authenticated for tenant '${t}' via browser login.`
             });
           } else {
-            res.writeHead(400, { 'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*' });
-            res.end('<html><body><h3>Login failed or missing access token.</h3></body></html>');
+            res.writeHead(400, {
+              'Content-Type': 'text/html',
+              'Access-Control-Allow-Origin': allowedOrigin
+            });
+            res.end('<!DOCTYPE html><html><body><h3>Login failed or missing access token.</h3></body></html>');
           }
         });
         return;
@@ -375,7 +422,7 @@ async function startBrowserLogin(tenant, stage = 'beta') {
 // ── Downstream RecruiterFacade Proxy ──────────────────────────────────────────
 
 async function callDownstreamFacade(toolName, args, tenant, stage) {
-  const t = tenant || session.tenant || 'test';
+  const t = validateTenant(tenant);
   const s = stage || session.stage || 'beta';
   const token = await ensureValidToken(t, s);
 
@@ -433,20 +480,6 @@ const TOOLS = [
         tenant: { type: 'string', description: 'Tenant slug to check (defaults to active tenant)' },
         stage: { type: 'string', enum: ['beta', 'prod'], default: 'beta' }
       }
-    }
-  },
-  {
-    name: 'login',
-    description: 'Sign into Hireko recruiter account using email and password for a tenant.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        tenant: { type: 'string', description: 'Organization / tenant slug (e.g. "test")' },
-        username: { type: 'string', description: 'Recruiter account email' },
-        password: { type: 'string', description: 'Recruiter account password' },
-        stage: { type: 'string', enum: ['beta', 'prod'], default: 'beta' }
-      },
-      required: ['tenant', 'username', 'password']
     }
   },
   {
@@ -596,8 +629,8 @@ async function pollInterviewLink(externalJobGroupId, tenant, stage, timeoutSec =
 // ── Tool Handlers ─────────────────────────────────────────────────────────────
 
 async function handleToolCall(name, args) {
-  const tenant = args.tenant || session.tenant || 'test';
-  const stage = args.stage || session.stage || 'beta';
+  const tenant = validateTenant(args.tenant || session.tenant || 'test');
+  const stage = (args.stage || session.stage || 'beta') === 'prod' ? 'prod' : 'beta';
 
   switch (name) {
     case 'auth_status': {
@@ -611,12 +644,18 @@ async function handleToolCall(name, args) {
         expiresInSec: isAuth ? Math.max(0, Math.round((session.expiresAt - Date.now()) / 1000)) : 0,
         message: isAuth
           ? `Authenticated as recruiter for tenant '${tenant}' (${stage} stage).`
-          : `Signed out. Please use login or login_browser to authenticate for tenant '${tenant}'.`
+          : `Signed out. Please use login_browser to authenticate for tenant '${tenant}', or set HIREKO_PASSWORD in env.`
       };
     }
 
     case 'login': {
-      const res = await loginWithPassword(args.tenant, args.username, args.password, stage);
+      // In headless environments, read password from HIREKO_PASSWORD env var rather than LLM tool args
+      const password = process.env.HIREKO_PASSWORD || process.env.HirekoOpenPlugin_password || session.password;
+      const username = args.username || process.env.HIREKO_USERNAME || session.username;
+      if (!password || !username) {
+        throw new Error("Password login via chat arguments is disabled for security. Please use 'login_browser', or set HIREKO_USERNAME and HIREKO_PASSWORD in your environment / mcp_servers.hireko.env.");
+      }
+      const res = await loginWithPassword(tenant, username, password, stage);
       return {
         status: 'success',
         message: `Successfully authenticated as ${res.username} for tenant '${res.tenant}' (${res.stage} stage).`,
