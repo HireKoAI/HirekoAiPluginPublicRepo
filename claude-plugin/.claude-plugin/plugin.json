@@ -1,20 +1,20 @@
 {
   "name": "hireko-open-plugin",
-  "version": "0.1.1",
-  "description": "Hireko Recruiter MCP gateway: Cognito authentication, interview link creation, and candidate search scoring.",
+  "version": "0.1.3",
+  "description": "Hireko recruiting for Claude (beta): create AI screening interview links, search jobs, and review candidate match scores, with secure Hireko sign-in.",
   "repository": "https://github.com/HireKoAI/HirekoAiPluginPublicRepo",
   "homepage": "https://hireko.ai",
   "privacyPolicyUrl": "https://hireko.ai/privacy",
   "license": "MIT",
   "keywords": [
-    "mcp",
     "hireko",
+    "recruiting",
     "recruiter",
-    "gateway",
-    "cognito",
-    "multi-tenant",
-    "login",
-    "logout"
+    "hiring",
+    "interview",
+    "screening",
+    "candidates",
+    "job-search"
   ],
   "skills": "./skills/",
   "author": {
