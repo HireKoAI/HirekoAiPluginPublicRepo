@@ -21,7 +21,7 @@ Sign-in is handled by Claude, not by tools. There is no login, logout, or status
 ## Required arguments: `tenant` and `stage`
 
 - `tenant` is the company the user signed in with (lowercase, e.g. `acme`). If you don't know it yet, ask the user once and reuse it for the rest of the conversation. Calls for another company are rejected.
-- `stage`: this build of the plugin connects to **Hireko beta**. Always pass `stage: "beta"`, even where a tool description says the default is `prod`.
+- `stage`: this plugin connects to  production. Always pass `stage: "prod"`.
 
 ## Tools
 

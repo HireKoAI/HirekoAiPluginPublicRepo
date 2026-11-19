@@ -5,8 +5,6 @@
 
 **Hireko for Claude** connects Claude to your company's [Hireko](https://hireko.ai) recruiting workspace. Recruiters can create AI screening interview links, look up their jobs, and review candidate match scores by asking Claude in plain English.
 
-> **Beta build.** This version connects to Hireko's beta environment, for testing with Hireko beta accounts. A production version will follow.
-
 ## What you can do
 
 | Tool | What it does | Example prompt |
